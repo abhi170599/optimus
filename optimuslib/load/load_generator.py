@@ -6,7 +6,8 @@ from ast import List, Tuple
 from typing import Any, List, Tuple
 import requests
 import time
-
+import subprocess
+import re
 
 class LoadGenerator:
     """
@@ -52,3 +53,40 @@ class LoadGenerator:
         return average_latency/success_count    
 
     
+class ApacheLoadGenerator:
+    """
+    Load generator for apache httpd server 
+    """
+    def __init__(self, url: str, time: int) -> None:
+        self.url = url 
+        self.time = time 
+
+    def get_average_request_per_sec(self) -> int:
+        """
+        run the Apache Benchmark and return mean
+        reqeusts per seconds
+        """
+        result = subprocess.run(args=[f'ab -t {self.time} -c 50 {self.url}'], shell=True, text=True, capture_output=True)
+        output = result.stdout
+
+        requests_per_second_line = re.findall('Requests per second: .* \d+',output)
+        requests_per_second = int(requests_per_second_line[0].replace(" ","").split(':')[1])
+
+        return requests_per_second
+
+    def get_average_latency(self) -> int:
+        """
+        run the Apache Benchmark and return mean.
+        average latency.
+        """
+        result = subprocess.run(args=[f'ab -t {self.time} -c 1000 -n 50000 {self.url}'], shell=True, text=True, capture_output=True)
+        output = result.stdout
+
+        requests_per_second_line = re.findall('Time per request: .* \d+',output)
+        requests_per_second = int(requests_per_second_line[0].replace(" ","").split(':')[1])
+
+        return requests_per_second    
+
+
+
+
